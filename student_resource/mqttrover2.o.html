@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ESP8266 Rover Control</title>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<style>
+  body { font-family: Arial; background: #f2f2f2; padding: 20px; text-align: center; }
+  .button { padding: 10px 20px; margin: 10px; border: none; border-radius: 8px; background: #007bff; color: white; cursor: pointer; }
+  .button:hover { background: #0056b3; }
+  .slider { width: 200px; }
+</style>
+</head>
+<body>
+<h1>🚗 ESP8266 Rover + Arm Control</h1>
+
+<h3>Rover Movement (Use W A S D keys)</h3>
+<p>W = Forward | S = Backward | A = Left | D = Right | X = Stop</p>
+
+<div>
+  <button class="button" onclick="sendCommand('forward')">⬆️ Forward</button><br>
+  <button class="button" onclick="sendCommand('left')">⬅️ Left</button>
+  <button class="button" onclick="sendCommand('stop')">⛔ Stop</button>
+  <button class="button" onclick="sendCommand('right')">➡️ Right</button><br>
+  <button class="button" onclick="sendCommand('backward')">⬇️ Backward</button>
+</div>
+
+<hr>
+
+<h3>Robotic Arm Control</h3>
+<p>Base Servo</p>
+<input type="range" id="servo1" class="slider" min="0" max="180" value="90" oninput="updateServo(1, this.value)">
+<p>Arm Servo</p>
+<input type="range" id="servo2" class="slider" min="0" max="180" value="90" oninput="updateServo(2, this.value)">
+<p>Gripper Servo</p>
+<input type="range" id="servo3" class="slider" min="0" max="180" value="90" oninput="updateServo(3, this.value)">
+
+<script>
+// ===== MQTT CONFIG =====
+const client = mqtt.connect('wss://f5bc2a85c9c747488d7ab174eaa1faaf.s1.eu.hivemq.cloud:8884/mqtt', {
+  username: "hivemq.webclient.1758715810298",
+  password: "Y*9.%m2vj!rKJyLB1X0q"
+});
+
+client.on('connect', () => {
+  console.log("Connected to HiveMQ Cloud");
+});
+
+function sendCommand(cmd) {
+  client.publish('rover/move', cmd);
+  console.log("Sent:", cmd);
+}
+
+function updateServo(num, val) {
+  client.publish(`rover/servo${num}`, val);
+  console.log(`Servo${num}:`, val);
+}
+
+// WASD Key Controls
+document.addEventListener('keydown', (e) => {
+  const key = e.key.toLowerCase();
+  if (key === 'w') sendCommand('forward');
+  if (key === 'a') sendCommand('left');
+  if (key === 's') sendCommand('backward');
+  if (key === 'd') sendCommand('right');
+  if (key === 'x') sendCommand('stop');
+});
+</script>
+</body>
+</html>

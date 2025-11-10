@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Rover + Arm Control Dashboard</title>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<style>
+  body { font-family: 'Poppins', sans-serif; background: #f4f4f4; text-align: center; padding: 20px; }
+  h1 { color: #333; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; margin: 20px auto; width: 350px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  button { margin: 5px; padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+  .forward { background: #00C851; color: #fff; }
+  .backward { background: #ff4444; color: #fff; }
+  .left, .right { background: #33b5e5; color: #fff; }
+  .stop { background: #ffbb33; color: #fff; }
+  input[type=range] { width: 80%; margin: 10px; }
+</style>
+</head>
+<body>
+
+<h1>MQTT Rover + Robotic Arm Dashboard 🤖</h1>
+
+<div class="card">
+  <h2>Rover Controls</h2>
+  <button class="forward" onclick="sendCommand('F')">↑ Forward</button><br>
+  <button class="left" onclick="sendCommand('L')">← Left</button>
+  <button class="stop" onclick="sendCommand('S')">Stop</button>
+  <button class="right" onclick="sendCommand('R')">Right →</button><br>
+  <button class="backward" onclick="sendCommand('B')">↓ Backward</button>
+</div>
+
+<div class="card">
+  <h2>Robotic Arm Control</h2>
+  <label>Base Servo: <span id="baseVal">90</span>°</label><br>
+  <input type="range" id="baseSlider" min="0" max="180" value="90" oninput="updateServo('base', this.value)">
+  <br>
+  <label>Arm Servo: <span id="armVal">90</span>°</label><br>
+  <input type="range" id="armSlider" min="0" max="180" value="90" oninput="updateServo('arm', this.value)">
+  <br>
+  <label>Gripper Servo: <span id="gripVal">90</span>°</label><br>
+  <input type="range" id="gripSlider" min="0" max="180" value="90" oninput="updateServo('grip', this.value)">
+</div>
+
+<div class="card">
+  <h2>Environment Data 🌡️</h2>
+  <p>Temperature: <span id="temp">--</span> °C</p>
+  <p>Humidity: <span id="hum">--</span> %</p>
+</div>
+
+<script>
+const client = mqtt.connect('wss://f5bc2a85c9c747488d7ab174eaa1faaf.s1.eu.hivemq.cloud:8884/mqtt', {
+  username: "hivemq.webclient.1758715810298",
+  password: "Y*9.%m2vj!rKJyLB1X0q"
+});
+
+client.on('connect', () => {
+  console.log("Connected to HiveMQ ✅");
+  client.subscribe('rover/sensor/#');
+});
+
+function sendCommand(cmd) {
+  console.log("Sending command:", cmd);
+  client.publish('rover/control', cmd);
+}
+
+function updateServo(servo, angle) {
+  document.getElementById(servo + "Val").innerText = angle;
+  client.publish(`rover/servo/${servo}`, angle.toString());
+}
+
+client.on('message', (topic, message) => {
+  const msg = message.toString();
+  if (topic === "rover/sensor/temp") document.getElementById('temp').innerText = msg;
+  if (topic === "rover/sensor/hum") document.getElementById('hum').innerText = msg;
+});
+</script>
+</body>
+</html>
